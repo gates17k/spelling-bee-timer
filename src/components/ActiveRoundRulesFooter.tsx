@@ -71,30 +71,30 @@ export const ActiveRoundRulesFooter: React.FC<ActiveRoundRulesFooterProps> = ({
   return (
     <section
       aria-label="Category Code Number Lot Box and Pronunciation Speed Controller"
-      className="w-full shrink-0 px-4 pb-2 pt-0.5 lg:px-6"
+      className="w-full shrink-0 px-3 pb-1 pt-0.5 sm:px-4 sm:pb-1.5"
     >
-      <div className="grid grid-cols-12 gap-3">
+      <div className="grid grid-cols-12 gap-1.5 sm:gap-2.5">
         {/* Left 8 Columns: Interactive Code Number Lots for Current Category (Trial Run #01-#10 / Round #01-#50 / Tie-Breaker TB-01-TB-20) */}
-        <div className="col-span-8 flex flex-col justify-between rounded-xl border border-[#d4af37]/60 bg-[#071a38]/95 px-3 py-1.5 shadow-lg">
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 border-b border-[#d4af37]/30 pb-1">
-            <div className="flex items-center gap-1.5">
-              <Hash className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-              <h3 className="font-display-serif text-xs font-black tracking-wider text-white">
+        <div className="col-span-8 flex flex-col justify-between rounded-lg sm:rounded-xl border border-[#d4af37]/60 bg-[#071a38]/95 px-2.5 py-1 sm:px-3 sm:py-1.5 shadow-lg">
+          <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1.5 border-b border-[#d4af37]/30 pb-0.5">
+            <div className="flex items-center gap-1">
+              <Hash className="h-3 w-3 text-amber-300 shrink-0" />
+              <h3 className="font-display-serif text-[11px] sm:text-xs font-black tracking-wider text-white">
                 {isTieBreaker
-                  ? 'TIE-BREAKER CODES (TB-01 TO TB-20) — STEP 1: SELECT CODE NUMBER'
+                  ? 'TIE-BREAKER CODES (TB-01 TO TB-20) — STEP 1: SELECT CODE'
                   : round.id === 'trial'
-                  ? 'TRIAL RUN CODES (#01 TO #10) — STEP 1: SELECT CODE NUMBER'
-                  : `${round.title.toUpperCase()} CODES (#01 TO #50) — STEP 1: SELECT CODE NUMBER`}
+                  ? 'TRIAL RUN CODES (#01 TO #10) — STEP 1: SELECT CODE'
+                  : `${round.title.toUpperCase()} CODES (#01 TO #50) — STEP 1: SELECT CODE`}
               </h3>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span
                 data-testid="used-legend-badge"
-                className="inline-flex items-center gap-1 rounded bg-red-950/90 border border-red-600/70 px-1.5 py-0.5 text-[10px] font-extrabold text-red-300"
+                className="inline-flex items-center gap-0.5 rounded bg-red-950/90 border border-red-600/70 px-1.5 py-0.2 text-[9px] sm:text-[10px] font-extrabold text-red-300"
               >
-                <X className="h-3 w-3 stroke-[3.5] text-red-400" />
-                <span>✕ = Selected &amp; Used</span>
+                <X className="h-2.5 w-2.5 stroke-[3.5] text-red-400" />
+                <span>✕ = Used</span>
               </span>
 
               <form onSubmit={handleQuickJumpCode} className="flex items-center gap-1">
@@ -104,24 +104,24 @@ export const ActiveRoundRulesFooter: React.FC<ActiveRoundRulesFooterProps> = ({
                   max={categoryWords.length}
                   value={quickCodeInput}
                   onChange={(e) => setQuickCodeInput(e.target.value)}
-                  placeholder={`Code 1–${categoryWords.length}`}
+                  placeholder={`1–${categoryWords.length}`}
                   aria-label="Quick select code number"
-                  className="w-20 rounded border border-[#d4af37]/50 bg-[#041024] px-1.5 py-0.5 text-[11px] font-bold text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
+                  className="w-16 rounded border border-[#d4af37]/50 bg-[#041024] px-1 py-0.2 text-[10px] sm:text-[11px] font-bold text-white placeholder:text-slate-400 focus:border-amber-300 focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="rounded bg-amber-400/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-extrabold text-amber-200 hover:bg-amber-400/30 cursor-pointer"
+                  className="rounded bg-amber-400/20 border border-amber-400/50 px-1.5 py-0.2 text-[9px] sm:text-[10px] font-extrabold text-amber-200 hover:bg-amber-400/30 cursor-pointer"
                 >
                   Select
                 </button>
               </form>
-              <span className="text-[10px] font-bold text-amber-300 whitespace-nowrap">
-                Step 2: Click &ldquo;PRONOUNCE &amp; START CLOCK&rdquo;
+              <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 whitespace-nowrap">
+                Step 2: Pronounce &amp; Start
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-10 gap-1">
+          <div className="grid grid-cols-10 gap-0.5 sm:gap-1">
             {categoryWords.map((item) => {
               const isSelected = item.id === selectedWordId;
               const fullCodeLabel = formatCodeNumber(item.boxNumber, item.isTieBreaker);
@@ -139,7 +139,7 @@ export const ActiveRoundRulesFooter: React.FC<ActiveRoundRulesFooterProps> = ({
                   onClick={() => onSelectCodeNumberOnly(item)}
                   aria-pressed={isSelected}
                   className={`group relative flex items-center justify-between rounded border transition-all cursor-pointer ${
-                    isDense50Grid ? 'px-1.5 py-0.5' : 'px-2 py-1.5'
+                    isDense50Grid ? 'px-1 py-0.2' : 'px-1.5 py-0.5 sm:py-1'
                   } ${
                     isSelected
                       ? item.used

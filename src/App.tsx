@@ -311,12 +311,11 @@ export default function App() {
   ]);
 
   return (
-    <div className="min-h-screen w-screen bg-[#020813] text-white flex items-center justify-center overflow-x-hidden p-0 lg:p-2">
-      {/* Locked 16:9 Landscape Stage Banner Container */}
+    <div className="min-h-screen w-screen bg-[#020813] text-white flex items-center justify-center overflow-x-hidden p-0 sm:p-1">
+      {/* 16:9 Landscape Stage Banner Container - Adaptive to any viewport */}
       <div
         data-testid="landscape-16-9-banner"
-        style={{ aspectRatio: '16 / 9' }}
-        className="relative w-full max-w-[min(100vw,calc(100vh*16/9))] aspect-video bg-gradient-to-b from-[#041022] via-[#071d3d] to-[#030b18] border-2 border-[#d4af37] shadow-[0_0_70px_rgba(0,0,0,0.95)] flex flex-col justify-between overflow-hidden"
+        className="relative w-full max-w-[min(100vw,calc(100vh*16/9))] h-screen max-h-screen bg-gradient-to-b from-[#041022] via-[#071d3d] to-[#030b18] border-2 border-[#d4af37] shadow-[0_0_70px_rgba(0,0,0,0.95)] flex flex-col justify-between overflow-y-auto"
       >
         {/* 1. KINESIS 2026 SHILLONG MEDICAL COLLEGE HEADER BANNER */}
         <KinesisBannerHeader
