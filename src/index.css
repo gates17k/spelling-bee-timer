@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Cinzel', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-digital: 'Share Tech Mono', 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #06152d;
+    color: #ffffff;
+    overflow-x: hidden;
+  }
+}
+
+.font-display-serif {
+  font-family: var(--font-display);
+}
+
+.font-digital-led {
+  font-family: var(--font-digital);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* High-contrast Red LED Digital Glow for Projector Legibility */
+.led-red-glow {
+  color: #ff1a1a;
+  text-shadow:
+    0 0 12px rgba(255, 26, 26, 0.85),
+    0 0 28px rgba(255, 0, 0, 0.55),
+    0 0 56px rgba(220, 0, 0, 0.35);
+}
+
+.led-red-critical {
+  color: #ff2e2e;
+  text-shadow:
+    0 0 16px rgba(255, 46, 46, 0.95),
+    0 0 36px rgba(255, 0, 0, 0.8),
+    0 0 70px rgba(255, 0, 0, 0.5);
+}
+
+.led-ghost {
+  color: rgba(255, 20, 20, 0.07);
+}
+
+/* Gold metallic gradients matching Kinesis 2026 Banner */
+.bg-gold-metallic {
+  background: linear-gradient(135deg, #b8860b 0%, #f5d77f 35%, #d4af37 55%, #fff1be 75%, #aa7c11 100%);
+}
+
+.text-gold-metallic {
+  background: linear-gradient(180deg, #fff3c4 0%, #f0c75e 45%, #c69214 85%, #e5b842 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-gold-metallic {
+  border-color: #d4af37;
+}

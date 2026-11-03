@@ -1,0 +1,6 @@
+{
+  "name": "Kinesis 2026 Spelling Bee Stage Banner & Timer",
+  "description": "High-contrast projection stage banner and MM:SS:MS digital countdown timer for the Kinesis 2026 Spelling Bee Competition at Shillong Medical College, featuring round level progression and Always-On-Top Picture-in-Picture projection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
