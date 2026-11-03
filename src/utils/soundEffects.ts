@@ -16,6 +16,10 @@ class StageSoundEngine {
     return this.ctx;
   }
 
+  public initAudioContext(): void {
+    this.getContext();
+  }
+
   public playStartBell() {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -110,6 +114,18 @@ class StageSoundEngine {
 
 export const soundEngine = new StageSoundEngine();
 
+// Pre-cache voices to eliminate initial delay when user triggers pronunciation
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+  } catch {
+    // Ignore environments where speechSynthesis is partially mocked or restricted
+  }
+}
+
 function selectBritishVoice(): SpeechSynthesisVoice | undefined {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return undefined;
   const voices = window.speechSynthesis.getVoices();
@@ -121,11 +137,32 @@ function selectBritishVoice(): SpeechSynthesisVoice | undefined {
 }
 
 /**
- * Software Pronouncer using British English (en-GB) SpeechSynthesis as specified in Rule 3 & Rule 6
+ * Software Pronouncer using British English (en-GB) SpeechSynthesis.
+ * Accepts optional onEnd and onStart callbacks to synchronize the countdown timer so that
+ * the clock starts only AFTER the word is pronounced fully with zero audio lag.
+ * Returns a cancel function.
  */
-export function pronounceBritishEnglish(text: string, rate: number = 0.82) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+export function pronounceBritishEnglish(
+  text: string,
+  rate: number = 0.82,
+  onEnd?: () => void,
+  onStart?: () => void
+): () => void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onEnd?.();
+    return () => {};
+  }
+
+  // Pre-wake speech engine and clear prior utterances without delay
+  try {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch {
+    // Ignore
+  }
+
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-GB';
   utterance.rate = rate;
@@ -135,7 +172,59 @@ export function pronounceBritishEnglish(text: string, rate: number = 0.82) {
   if (gbVoice) {
     utterance.voice = gbVoice;
   }
+
+  let completed = false;
+  let safetyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const finish = () => {
+    if (completed) return;
+    completed = true;
+    if (safetyTimeout) {
+      clearTimeout(safetyTimeout);
+      safetyTimeout = null;
+    }
+    onEnd?.();
+  };
+
+  utterance.onstart = () => {
+    onStart?.();
+  };
+
+  utterance.onend = () => {
+    finish();
+  };
+
+  utterance.onerror = (e) => {
+    // If canceled by another deliberate user action, don't execute finish as completion
+    if (e.error !== 'canceled') {
+      finish();
+    }
+  };
+
+  // Safety fallback: if speech synthesis drops onend (known browser quirk),
+  // guarantee the timer still starts after word duration + safety buffer
+  const estimatedDurationMs = Math.max(
+    1400,
+    Math.ceil((text.length * 150) / Math.max(0.4, rate)) + 800
+  );
+  safetyTimeout = setTimeout(() => {
+    finish();
+  }, estimatedDurationMs);
+
   window.speechSynthesis.speak(utterance);
+
+  return () => {
+    if (safetyTimeout) {
+      clearTimeout(safetyTimeout);
+      safetyTimeout = null;
+    }
+    completed = true;
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // Ignore
+    }
+  };
 }
 
 /**
@@ -145,10 +234,22 @@ export function pronounceWordAndMeaningBritishEnglish(
   word: string,
   meaning: string,
   wordRate: number = 0.82,
-  meaningRate: number = 0.90
-) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+  meaningRate: number = 0.90,
+  onEnd?: () => void
+): () => void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onEnd?.();
+    return () => {};
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch {
+    // Ignore
+  }
 
   const gbVoice = selectBritishVoice();
 
@@ -164,6 +265,27 @@ export function pronounceWordAndMeaningBritishEnglish(
   meaningUtterance.pitch = 1.0;
   if (gbVoice) meaningUtterance.voice = gbVoice;
 
+  let completed = false;
+  const finish = () => {
+    if (completed) return;
+    completed = true;
+    onEnd?.();
+  };
+
+  meaningUtterance.onend = () => finish();
+  meaningUtterance.onerror = (e) => {
+    if (e.error !== 'canceled') finish();
+  };
+
   window.speechSynthesis.speak(wordUtterance);
   window.speechSynthesis.speak(meaningUtterance);
+
+  return () => {
+    completed = true;
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // Ignore
+    }
+  };
 }

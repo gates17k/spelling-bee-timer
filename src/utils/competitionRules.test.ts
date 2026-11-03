@@ -113,3 +113,20 @@ test('Participant scoring awards 10 points per correct word and 0 for incorrect'
   const p1 = afterCorrect.find((p) => p.id === 1)!;
   assert.equal(p1.scores.round1.points, 10);
 });
+
+test('Code words remain completely untouched and UK English spellings verified', () => {
+  const round1 = getCategoryWordPool(INITIAL_MEDICAL_WORD_BOX, 'round1', false);
+  const code13 = round1.find((w) => w.boxNumber === 13);
+  const code16 = round1.find((w) => w.boxNumber === 16);
+
+  assert.ok(code13);
+  assert.equal(code13.britishSpelling, 'SPHYGMOMANOMETER');
+  assert.equal(code13.ttsWord, 'sphygmomanometer');
+
+  assert.ok(code16);
+  assert.equal(code16.britishSpelling, 'CRYPTORCHIDISM');
+  assert.equal(code16.ttsWord, 'cryptorchidism');
+
+  // Verify all 80 words are defined and intact
+  assert.equal(INITIAL_MEDICAL_WORD_BOX.length, 80);
+});

@@ -59,6 +59,10 @@ export default function App() {
   const endTimeRef = useRef<number | null>(null);
   const lastWholeSecondRef = useRef<number | null>(null);
 
+  // Pronunciation and Clock Synchronization State
+  const [isPronouncingBeforeClock, setIsPronouncingBeforeClock] = useState<boolean>(false);
+  const cancelSpeechRef = useRef<(() => void) | null>(null);
+
   // Filter words for the currently active category:
   // - Trial Run: 10 Trial words (CODE #01 to CODE #10)
   // - Round 1, Round 2, Round 3: 50 Finalised Round words (CODE #01 to CODE #50)
@@ -139,6 +143,8 @@ export default function App() {
   // Switch Category / Round Handler (Selects first unused Code Number silently without pronouncing)
   const handleSelectRound = useCallback(
     (roundId: RoundId) => {
+      cancelSpeechRef.current?.();
+      setIsPronouncingBeforeClock(false);
       const targetConfig = ROUNDS_CONFIG[roundId];
       setIsRunning(false);
       endTimeRef.current = null;
@@ -158,6 +164,8 @@ export default function App() {
 
   // Toggle Tie-Breaker Category Mode (Selects first unused Tie-Breaker Code Number silently)
   const handleToggleTieBreaker = useCallback(() => {
+    cancelSpeechRef.current?.();
+    setIsPronouncingBeforeClock(false);
     setIsRunning(false);
     endTimeRef.current = null;
     setIsTieBreaker((prev) => {
@@ -176,6 +184,8 @@ export default function App() {
   // Select a Code Number ONLY (SILENT — does NOT pronounce the word yet; waits for "PRONOUNCE & START CLOCK")
   const handleSelectCodeNumberOnly = useCallback(
     (word: MedicalWordBoxItem) => {
+      cancelSpeechRef.current?.();
+      setIsPronouncingBeforeClock(false);
       setIsRunning(false);
       endTimeRef.current = null;
       setSelectedWordId(word.id);
@@ -189,6 +199,11 @@ export default function App() {
 
   // Start / Pause Clock Handler
   const handleStartPause = useCallback(() => {
+    if (isPronouncingBeforeClock) {
+      cancelSpeechRef.current?.();
+      setIsPronouncingBeforeClock(false);
+      return;
+    }
     setIsRunning((prev) => {
       if (!prev) {
         if (remainingMs <= 0) {
@@ -199,10 +214,12 @@ export default function App() {
       }
       return false;
     });
-  }, [remainingMs, currentRound.durationMs]);
+  }, [remainingMs, currentRound.durationMs, isPronouncingBeforeClock]);
 
   // Reset Clock Handler
   const handleReset = useCallback(() => {
+    cancelSpeechRef.current?.();
+    setIsPronouncingBeforeClock(false);
     setIsRunning(false);
     endTimeRef.current = null;
     setRemainingMs(currentRound.durationMs);
@@ -214,7 +231,8 @@ export default function App() {
       if (!currentWordItem) return;
       const effectiveRate = clampSpeechRate(rate ?? wordSpeechRate);
       setHasPronouncedCurrentWord(true);
-      pronounceBritishEnglish(
+      cancelSpeechRef.current?.();
+      cancelSpeechRef.current = pronounceBritishEnglish(
         currentWordItem.ttsWord || currentWordItem.britishSpelling.toLowerCase(),
         effectiveRate
       );
@@ -222,28 +240,56 @@ export default function App() {
     [currentWordItem, wordSpeechRate]
   );
 
-  // Rule 2 & 7: Pronounce the selected Code Number's word in UK English at wordSpeechRate AND start the countdown clock immediately
+  // Rule 2 & 7: Pronounce the selected Code Number's word in UK English at wordSpeechRate.
+  // The countdown clock starts ONLY after the word has been pronounced fully, giving contestants their complete allotted time.
   const handlePronounceAndStartClock = useCallback(() => {
-    if (!currentWordItem) return;
-    setHasPronouncedCurrentWord(true);
-    setRevealSpellingOnStage(false);
-    pronounceBritishEnglish(
-      currentWordItem.ttsWord || currentWordItem.britishSpelling.toLowerCase(),
-      wordSpeechRate
-    );
+    if (!currentWordItem || isPronouncingBeforeClock) return;
+
+    // Cancel any prior speech utterance
+    cancelSpeechRef.current?.();
+
+    // Mark lot code as used immediately (Rule 7: used status)
     setWordBox((prev) =>
       prev.map((w) => (w.id === currentWordItem.id ? { ...w, used: true } : w))
     );
+
+    // Update stage word locked state and hide spelling
+    setHasPronouncedCurrentWord(true);
+    setRevealSpellingOnStage(false);
+    setIsMeaningVisibleOnStage(false);
+
+    // Keep clock in ready state at full allotted duration until speech completes
+    setIsRunning(false);
+    endTimeRef.current = null;
     setRemainingMs(currentRound.durationMs);
-    setIsRunning(true);
-  }, [currentWordItem, currentRound.durationMs, wordSpeechRate]);
+    setIsPronouncingBeforeClock(true);
+
+    // Pre-initialize AudioContext so start bell plays instantly with zero lag
+    soundEngine.initAudioContext();
+
+    const wordToSpeak = currentWordItem.ttsWord || currentWordItem.britishSpelling.toLowerCase();
+
+    // Pronounce the word in UK English; countdown timer commences precisely on speech completion
+    cancelSpeechRef.current = pronounceBritishEnglish(
+      wordToSpeak,
+      wordSpeechRate,
+      () => {
+        setIsPronouncingBeforeClock(false);
+        soundEngine.playStartBell();
+        setRemainingMs(currentRound.durationMs);
+        endTimeRef.current = performance.now() + currentRound.durationMs;
+        setIsRunning(true);
+      }
+    );
+  }, [currentWordItem, isPronouncingBeforeClock, currentRound.durationMs, wordSpeechRate]);
 
   // Rule 4 & 5: Speak meaning at meaningSpeechRate (inclusive of allotted time)
   const handlePronounceMeaning = useCallback(() => {
     if (!currentWordItem) return;
     setHasPronouncedCurrentWord(true);
     setIsMeaningVisibleOnStage(true);
-    pronounceWordAndMeaningBritishEnglish(
+    cancelSpeechRef.current?.();
+    cancelSpeechRef.current = pronounceWordAndMeaningBritishEnglish(
       currentWordItem.ttsWord || currentWordItem.britishSpelling.toLowerCase(),
       currentWordItem.meaning,
       wordSpeechRate,
@@ -352,6 +398,7 @@ export default function App() {
             onReset={handleReset}
             currentWordItem={currentWordItem}
             hasPronouncedCurrentWord={hasPronouncedCurrentWord}
+            isPronouncingBeforeClock={isPronouncingBeforeClock}
             isMeaningVisibleOnStage={isMeaningVisibleOnStage}
             revealSpellingOnStage={revealSpellingOnStage}
             onToggleRevealSpelling={() => setRevealSpellingOnStage((prev) => !prev)}
